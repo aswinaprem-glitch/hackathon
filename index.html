@@ -1,690 +1,2029 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#07131d" />
-  <meta name="description" content="SlopeWatch — live landslide risk awareness using weather, terrain and citizen reports." />
-  <title>SlopeWatch — Live Landslide Risk</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#07131d" />
+    <meta
+      name="description"
+      content="SlopeWatch — live landslide risk awareness using weather, terrain and citizen reports."
+    />
+    <title>SlopeWatch — Live Landslide Risk</title>
 
-  <link rel="preconnect" href="https://unpkg.com">
-  <link rel="preconnect" href="https://tile.openstreetmap.org">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIINfQ3f6a4R8j8kzq0qjz7qV1c0V9f5QxM="
-        crossorigin=""/>
+    <link rel="preconnect" href="https://unpkg.com" />
+    <link rel="preconnect" href="https://tile.openstreetmap.org" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
 
-  <style>
-:root{
- --bg:#061015;--panel:rgba(10,23,29,.82);--panel-solid:#0b1a20;
- --line:rgba(220,235,238,.10);--line-strong:rgba(220,235,238,.17);
- --text:#f2f6f5;--muted:#93a7ad;--green:#55dfad;--blue:#69aefc;
- --amber:#f2bd58;--red:#ff7078;--sidebar:224px;--radius:16px;
-}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{
- margin:0;background:#061015;color:var(--text);
- font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
- overflow-x:hidden;
-}
-button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:inherit}
-body:before{
- content:"";position:fixed;inset:0;z-index:-8;
- background:
- linear-gradient(90deg,rgba(3,10,14,.98) 0%,rgba(3,10,14,.92) 18%,rgba(3,10,14,.57) 50%,rgba(3,10,14,.68) 100%),
- linear-gradient(180deg,rgba(4,11,15,.10),rgba(4,11,15,.86) 88%),
- url("https://upload.wikimedia.org/wikipedia/commons/f/fa/Mucky_mountain_road_between_Manali_and_Rohtang_in_2009.jpg") center/cover fixed no-repeat;
- filter:saturate(.70) contrast(1.05);
-}
-body:after{
- content:"";position:fixed;inset:0;z-index:-7;pointer-events:none;
- background:radial-gradient(circle at 76% 7%,rgba(74,150,143,.20),transparent 27%),
- linear-gradient(120deg,transparent 42%,rgba(0,0,0,.20));
-}
-.rain-field{position:fixed;inset:0;z-index:-4;pointer-events:none;overflow:hidden;opacity:.18}
-.rain-layer{
- position:absolute;inset:-40% -15%;
- background-image:linear-gradient(112deg,transparent 0 48%,rgba(215,235,238,.35) 49%,transparent 50%);
- background-size:110px 190px;
- animation:rainMove 1.65s linear infinite;
-}
-.rain-layer-b{background-size:175px 270px;opacity:.42;animation-duration:2.3s;animation-delay:-.8s}
-.rain-vignette{position:absolute;inset:0;background:linear-gradient(180deg,transparent 0 45%,rgba(3,9,12,.38))}
-@keyframes rainMove{to{transform:translate3d(-100px,350px,0)}}
-.weather-orb{display:none}
-.rain-layer#rainLayer{position:fixed;inset:0;z-index:-3;pointer-events:none;overflow:hidden}
-.rain-drop{position:absolute;top:-120px;width:1px;background:linear-gradient(transparent,rgba(200,230,235,.65));animation:dropFall linear infinite;transform:rotate(12deg)}
-@keyframes dropFall{to{transform:translate3d(-120px,120vh,0)}}
+    <style>
+      :root {
+        --bg: #061015;
+        --panel: rgba(10, 23, 29, 0.82);
+        --panel-solid: #0b1a20;
+        --line: rgba(220, 235, 238, 0.1);
+        --line-strong: rgba(220, 235, 238, 0.17);
+        --text: #f2f6f5;
+        --muted: #93a7ad;
+        --green: #55dfad;
+        --blue: #69aefc;
+        --amber: #f2bd58;
+        --red: #ff7078;
+        --sidebar: 224px;
+        --radius: 16px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: #061015;
+        color: var(--text);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        overflow-x: hidden;
+      }
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+      button {
+        cursor: pointer;
+      }
+      a {
+        color: inherit;
+      }
+      body:before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -8;
+        background:
+          linear-gradient(
+            90deg,
+            rgba(3, 10, 14, 0.98) 0%,
+            rgba(3, 10, 14, 0.92) 18%,
+            rgba(3, 10, 14, 0.57) 50%,
+            rgba(3, 10, 14, 0.68) 100%
+          ),
+          linear-gradient(
+            180deg,
+            rgba(4, 11, 15, 0.1),
+            rgba(4, 11, 15, 0.86) 88%
+          ),
+          url("https://upload.wikimedia.org/wikipedia/commons/f/fa/Mucky_mountain_road_between_Manali_and_Rohtang_in_2009.jpg")
+            center/cover fixed no-repeat;
+        filter: saturate(0.7) contrast(1.05);
+      }
+      body:after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -7;
+        pointer-events: none;
+        background:
+          radial-gradient(
+            circle at 76% 7%,
+            rgba(74, 150, 143, 0.2),
+            transparent 27%
+          ),
+          linear-gradient(120deg, transparent 42%, rgba(0, 0, 0, 0.2));
+      }
+      .rain-field {
+        position: fixed;
+        inset: 0;
+        z-index: -4;
+        pointer-events: none;
+        overflow: hidden;
+        opacity: 0.18;
+      }
+      .rain-layer {
+        position: absolute;
+        inset: -40% -15%;
+        background-image: linear-gradient(
+          112deg,
+          transparent 0 48%,
+          rgba(215, 235, 238, 0.35) 49%,
+          transparent 50%
+        );
+        background-size: 110px 190px;
+        animation: rainMove 1.65s linear infinite;
+      }
+      .rain-layer-b {
+        background-size: 175px 270px;
+        opacity: 0.42;
+        animation-duration: 2.3s;
+        animation-delay: -0.8s;
+      }
+      .rain-vignette {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          180deg,
+          transparent 0 45%,
+          rgba(3, 9, 12, 0.38)
+        );
+      }
+      @keyframes rainMove {
+        to {
+          transform: translate3d(-100px, 350px, 0);
+        }
+      }
+      .weather-orb {
+        display: none;
+      }
+      .rain-layer#rainLayer {
+        position: fixed;
+        inset: 0;
+        z-index: -3;
+        pointer-events: none;
+        overflow: hidden;
+      }
+      .rain-drop {
+        position: absolute;
+        top: -120px;
+        width: 1px;
+        background: linear-gradient(transparent, rgba(200, 230, 235, 0.65));
+        animation: dropFall linear infinite;
+        transform: rotate(12deg);
+      }
+      @keyframes dropFall {
+        to {
+          transform: translate3d(-120px, 120vh, 0);
+        }
+      }
 
-header{
- position:fixed;left:0;top:0;bottom:0;width:var(--sidebar);z-index:1000;
- background:rgba(4,13,18,.88);border-right:1px solid rgba(255,255,255,.08);
- backdrop-filter:blur(18px);box-shadow:12px 0 50px rgba(0,0,0,.18);
-}
-.wrap{max-width:none;margin:0;padding:0 26px}
-.nav{height:100%;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;padding:24px 15px;gap:26px}
-.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:850;letter-spacing:-.045em;font-size:19px;padding:3px 8px 15px}
-.brand-mark{
- width:33px;height:33px;border-radius:9px;display:grid;place-items:center;
- background:linear-gradient(135deg,#52d8bf,#559ef7);color:#061015;font-weight:1000;
- box-shadow:0 10px 30px rgba(82,216,191,.12)
-}
-.navlinks{display:flex;flex-direction:column;gap:4px}
-.navlinks a{
- text-decoration:none;color:#8fa3a9;font-size:13px;padding:11px 12px;border-radius:10px;
- transition:.2s;display:flex;align-items:center;gap:10px
-}
-.navlinks a:before{content:"";width:5px;height:5px;border-radius:50%;background:#50656c;transition:.2s}
-.navlinks a:first-child{color:#fff;background:rgba(76,144,157,.15);box-shadow:inset 2px 0 #64b8ff}
-.navlinks a:first-child:before{background:#64b8ff;box-shadow:0 0 8px #64b8ff}
-.navlinks a:hover{background:rgba(255,255,255,.05);color:#fff}
-.status{
- margin-top:auto;display:flex;align-items:center;gap:8px;color:#9aadb2;font-size:10px;
- padding:12px;border:1px solid rgba(255,255,255,.07);border-radius:11px;background:rgba(15,32,39,.62)
-}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green)}
-main.wrap{margin-left:var(--sidebar);padding:0 34px;max-width:none}
-.hero{
- padding:74px 0 34px;display:grid;grid-template-columns:minmax(0,1fr) 410px;
- gap:45px;align-items:end;min-height:550px
-}
-.editorial-hero{padding-top:92px}
-.hero-copy{max-width:780px;padding-bottom:20px}
-.eyebrow{color:#a5b7bb;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.17em;display:flex;align-items:center;gap:9px}
-.eyebrow-line{width:28px;height:1px;background:#9fb2b6}
-h1{
- font-size:clamp(52px,6vw,86px);line-height:.91;letter-spacing:-.075em;
- margin:18px 0 23px;max-width:780px;font-weight:850
-}
-h1 em{font-style:normal;color:var(--green)}
-.hero p,.hero-lead{color:#b7c6c9;font-size:16px;line-height:1.7;max-width:680px;margin:0}
-.hero-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:25px}
-.btn{
- border:1px solid var(--line-strong);background:rgba(11,27,34,.78);color:#f4f8f7;
- padding:11px 15px;border-radius:10px;font-size:13px;font-weight:780;backdrop-filter:blur(10px);
- transition:transform .18s,border-color .18s,background .18s
-}
-.btn:hover{transform:translateY(-2px);border-color:#557078;background:#132830}
-.btn.primary{background:#edf6f2;color:#071116;border-color:#edf6f2}
-.btn.primary:hover{background:#fff}
-.btn.danger{color:#ffadb3;background:rgba(105,30,37,.22);border-color:rgba(255,103,112,.38)}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.hero-note{margin-top:17px;color:#71868d;font-size:10px;letter-spacing:.035em;display:flex;gap:8px;align-items:center}
-.note-mark{color:var(--green);font-size:8px}
-.hero-visual{display:grid;gap:10px}
-.hero-photo{
- position:relative;height:350px;border:1px solid var(--line-strong);border-radius:15px;overflow:hidden;
- background:#0c191f;box-shadow:0 25px 70px rgba(0,0,0,.30)
-}
-.hero-photo img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(.72) brightness(.70);transition:transform 8s ease}
-.hero-photo:hover img{transform:scale(1.045)}
-.photo-shade{position:absolute;inset:0;background:linear-gradient(180deg,transparent 20%,rgba(2,8,11,.10) 45%,rgba(2,8,11,.92) 100%)}
-.photo-caption{position:absolute;left:17px;right:17px;bottom:15px;display:grid;gap:4px}
-.photo-caption span{font-size:8px;letter-spacing:.16em;color:#9eafb2}
-.photo-caption strong{font-size:16px;line-height:1.25}
-.photo-caption small{font-size:9px;color:#819398}
-.hero-signal{
- background:rgba(8,21,27,.86);border:1px solid var(--line-strong);border-radius:12px;padding:14px 15px;
- backdrop-filter:blur(14px)
-}
-.signal-top{display:flex;justify-content:space-between;color:#81969c;font-size:9px;letter-spacing:.13em;font-weight:850}
-.live-chip{color:#68dfa9;display:flex;gap:6px;align-items:center}.live-chip i{width:6px;height:6px;border-radius:50%;background:#68dfa9;box-shadow:0 0 12px #68dfa9;animation:live 1.8s infinite}
-@keyframes live{50%{box-shadow:0 0 0 5px rgba(104,223,169,0)}}
-.signal-score{display:flex;align-items:end;gap:13px;margin-top:7px}
-.signal-score #riskScore{font-size:42px;line-height:1;font-weight:900;letter-spacing:-.06em}
-.risk-pill{display:inline-flex;padding:6px 8px;border-radius:6px;font-size:9px;font-weight:900;letter-spacing:.07em;margin-bottom:3px}
-.risk-low{background:rgba(67,209,123,.12);color:#71ed9f}.risk-medium{background:rgba(242,189,88,.12);color:#ffd575}.risk-high{background:rgba(255,98,108,.13);color:#ff9aa0}.risk-critical{background:#ff626c;color:#fff}
-.progress{height:5px;background:#1b3038;border-radius:99px;overflow:hidden;margin-top:12px}.progress>div{height:100%;width:0;border-radius:99px;transition:width .65s ease}
-.sub{color:var(--muted);font-size:11px;line-height:1.5;margin-top:6px}
-.data-fresh{display:flex;align-items:center;gap:6px;color:#687e85;font-size:9px;margin-top:9px}.data-fresh i{width:5px;height:5px;border-radius:50%;background:#57dfa4}
-.watch-strip{
- display:grid;grid-template-columns:1.6fr repeat(4,1fr);margin:0 0 17px;
- border-top:1px solid var(--line);border-bottom:1px solid var(--line)
-}
-.watch-title,.watch-item{padding:14px 15px;border-right:1px solid var(--line)}
-.watch-title{display:grid;gap:3px}.watch-title span{font-size:8px;letter-spacing:.15em;color:#72868c}.watch-title strong{font-size:12px}
-.watch-item{display:flex;align-items:center;gap:8px}.watch-item b{font-size:9px;color:#60d9bd}.watch-item span{font-size:10px;color:#9cafb3}
-.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:13px;margin-bottom:18px}
-.card{
- grid-column:span 3;background:rgba(9,22,28,.82);border:1px solid var(--line);
- border-radius:15px;padding:17px;box-shadow:0 12px 40px rgba(0,0,0,.15);backdrop-filter:blur(12px)
-}
-.card:hover{border-color:rgba(255,255,255,.15)}
-.card.wide{grid-column:span 8}.card.side{grid-column:span 4}.card.half{grid-column:span 6}.card.full{grid-column:1/-1}
-.label{font-size:9px;color:#81959b;text-transform:uppercase;letter-spacing:.12em;font-weight:800}
-.value{font-size:27px;font-weight:900;margin-top:7px;letter-spacing:-.05em}
-.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
-.metric{background:#09181e;border:1px solid var(--line);padding:12px;border-radius:10px}.metric b{display:block;font-size:17px;margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mapbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
-.section-title{font-size:19px;letter-spacing:-.045em;margin:0}.map{height:500px;border-radius:11px;overflow:hidden;background:#0a171c}
-#map{height:100%;width:100%}
-.leaflet-container{font:inherit}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#0c1c23;color:#fff}.leaflet-popup-content{font-size:12px}
-.forecast{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}.forecast .f{background:#09181e;border:1px solid var(--line);border-radius:9px;padding:9px}.f .time{font-size:9px;color:#74888f}.f strong{display:block;margin:6px 0;font-size:13px}.f span{font-size:10px;color:#a5b6bb}
-.notice{border:1px solid rgba(242,189,88,.20);background:rgba(242,189,88,.055);border-radius:10px;padding:12px;color:#d5c891;font-size:11px;line-height:1.55}
-.report-list,.place-list{display:grid;gap:7px;margin-top:12px;max-height:390px;overflow:auto}
-.report{border:1px solid var(--line);background:#09181e;border-radius:10px;padding:12px;display:flex;justify-content:space-between;gap:13px}
-.report .rtype{font-size:12px;font-weight:800}.report p{margin:4px 0;color:#aebdc2;font-size:11px;line-height:1.4}.report .time{font-size:9px;color:#6e838a;white-space:nowrap}
-.place{display:flex;justify-content:space-between;gap:12px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:11px;background:#09181e}.place-name{font-weight:800;font-size:11px}.place-meta{font-size:9px;color:#7f9399;margin-top:3px}.place a{font-size:10px;color:var(--green);text-decoration:none;font-weight:850;white-space:nowrap}
-.emergency{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}.emergency a{display:block;text-decoration:none;border:1px solid var(--line);background:#09181e;border-radius:10px;padding:12px}.emergency b{display:block;font-size:18px}.emergency span{font-size:10px;color:#7f9399}
-footer{padding:30px 0 50px;color:#687d84;font-size:10px;line-height:1.7}footer a{color:#93a8ae}
-.live-alert{
- position:fixed;right:22px;bottom:20px;z-index:5000;min-width:310px;max-width:430px;
- background:rgba(10,27,33,.95);border:1px solid #3a525a;border-radius:12px;padding:12px 14px;
- display:none;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;box-shadow:0 20px 70px rgba(0,0,0,.4);backdrop-filter:blur(16px)
-}
-.live-alert.show{display:grid;animation:alertIn .25s ease}.live-alert.danger{border-color:rgba(255,98,108,.48)}.alert-icon{font-size:17px}.live-alert strong{display:block;font-size:12px}.live-alert span{display:block;color:#9cafb4;font-size:10px;margin-top:3px;line-height:1.4}.live-alert button{border:0;background:transparent;color:#81949a;font-size:19px}
-@keyframes alertIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.modal{position:fixed;inset:0;background:rgba(1,6,9,.77);backdrop-filter:blur(9px);display:none;place-items:center;z-index:3000;padding:20px}.modal.open{display:grid}
-.modal-box{width:min(560px,100%);background:#0b1b22;border:1px solid var(--line-strong);border-radius:16px;padding:20px;box-shadow:0 30px 90px rgba(0,0,0,.45)}
-.modal-head{display:flex;justify-content:space-between;align-items:center}.modal h2{margin:0;font-size:19px}.close{background:transparent;border:0;color:#94a8ad;font-size:23px}
-.field{margin-top:14px}.field label{display:block;font-size:10px;color:#91a5aa;margin-bottom:6px;font-weight:800}.field input,.field select,.field textarea{width:100%;background:#07151b;color:#fff;border:1px solid var(--line);border-radius:9px;padding:10px;outline:0}.field textarea{min-height:100px;resize:vertical}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.toast{position:fixed;right:18px;bottom:18px;z-index:4000;background:#10242b;border:1px solid var(--line-strong);padding:12px 14px;border-radius:10px;box-shadow:0 18px 60px rgba(0,0,0,.38);display:none;max-width:360px;font-size:11px}.toast.show{display:block}
-@media(max-width:1100px){:root{--sidebar:190px}main.wrap{padding:0 22px}.hero{grid-template-columns:1fr}.hero-visual{grid-template-columns:1fr 1fr}.card{grid-column:span 6}.card.wide,.card.side{grid-column:1/-1}}
-@media(max-width:760px){
- :root{--sidebar:0px}header{position:relative;width:100%;height:auto;border-right:0;border-bottom:1px solid rgba(255,255,255,.08)}
- .nav{height:auto;padding:13px;gap:9px}.brand{padding:2px 6px 8px}.navlinks{flex-direction:row;overflow:auto}.navlinks a{white-space:nowrap;padding:8px 10px}.status{margin-top:0}
- main.wrap{margin-left:0;padding:0 14px}.hero{padding:48px 0 24px;min-height:auto}.hero-visual{grid-template-columns:1fr}.hero-photo{height:300px}
- h1{font-size:48px}.watch-strip{grid-template-columns:1fr 1fr}.watch-title{grid-column:1/-1}.watch-item{border-top:1px solid var(--line)}
- .card,.card.wide,.card.side,.card.half{grid-column:1/-1}.metrics{grid-template-columns:1fr 1fr}.forecast{grid-template-columns:1fr 1fr}.emergency{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}.map{height:410px}
-}
-@media(max-width:480px){.watch-strip{grid-template-columns:1fr}.watch-title{grid-column:auto}.watch-item{border-right:0}.metrics{grid-template-columns:1fr}.hero-actions .btn{width:100%}.live-alert{left:12px;right:12px;min-width:0}}
-@media(prefers-reduced-motion:reduce){.rain-layer,.rain-drop,.live-chip i{animation:none!important}.btn,.hero-photo img{transition:none!important}}
-</style>
-</head>
+      header {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: var(--sidebar);
+        z-index: 1000;
+        background: rgba(4, 13, 18, 0.88);
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(18px);
+        box-shadow: 12px 0 50px rgba(0, 0, 0, 0.18);
+      }
+      .wrap {
+        max-width: none;
+        margin: 0;
+        padding: 0 26px;
+      }
+      .nav {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        padding: 24px 15px;
+        gap: 26px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        font-weight: 850;
+        letter-spacing: -0.045em;
+        font-size: 19px;
+        padding: 3px 8px 15px;
+      }
+      .brand-mark {
+        width: 33px;
+        height: 33px;
+        border-radius: 9px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #52d8bf, #559ef7);
+        color: #061015;
+        font-weight: 1000;
+        box-shadow: 0 10px 30px rgba(82, 216, 191, 0.12);
+      }
+      .navlinks {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .navlinks a {
+        text-decoration: none;
+        color: #8fa3a9;
+        font-size: 13px;
+        padding: 11px 12px;
+        border-radius: 10px;
+        transition: 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .navlinks a:before {
+        content: "";
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: #50656c;
+        transition: 0.2s;
+      }
+      .navlinks a:first-child {
+        color: #fff;
+        background: rgba(76, 144, 157, 0.15);
+        box-shadow: inset 2px 0 #64b8ff;
+      }
+      .navlinks a:first-child:before {
+        background: #64b8ff;
+        box-shadow: 0 0 8px #64b8ff;
+      }
+      .navlinks a:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+      }
+      .status {
+        margin-top: auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #9aadb2;
+        font-size: 10px;
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 11px;
+        background: rgba(15, 32, 39, 0.62);
+      }
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 12px var(--green);
+      }
+      main.wrap {
+        margin-left: var(--sidebar);
+        padding: 0 34px;
+        max-width: none;
+      }
+      .hero {
+        padding: 74px 0 34px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 410px;
+        gap: 45px;
+        align-items: end;
+        min-height: 550px;
+      }
+      .editorial-hero {
+        padding-top: 92px;
+      }
+      .hero-copy {
+        max-width: 780px;
+        padding-bottom: 20px;
+      }
+      .eyebrow {
+        color: #a5b7bb;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.17em;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+      }
+      .eyebrow-line {
+        width: 28px;
+        height: 1px;
+        background: #9fb2b6;
+      }
+      h1 {
+        font-size: clamp(52px, 6vw, 86px);
+        line-height: 0.91;
+        letter-spacing: -0.075em;
+        margin: 18px 0 23px;
+        max-width: 780px;
+        font-weight: 850;
+      }
+      h1 em {
+        font-style: normal;
+        color: var(--green);
+      }
+      .hero p,
+      .hero-lead {
+        color: #b7c6c9;
+        font-size: 16px;
+        line-height: 1.7;
+        max-width: 680px;
+        margin: 0;
+      }
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+        margin-top: 25px;
+      }
+      .btn {
+        border: 1px solid var(--line-strong);
+        background: rgba(11, 27, 34, 0.78);
+        color: #f4f8f7;
+        padding: 11px 15px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 780;
+        backdrop-filter: blur(10px);
+        transition:
+          transform 0.18s,
+          border-color 0.18s,
+          background 0.18s;
+      }
+      .btn:hover {
+        transform: translateY(-2px);
+        border-color: #557078;
+        background: #132830;
+      }
+      .btn.primary {
+        background: #edf6f2;
+        color: #071116;
+        border-color: #edf6f2;
+      }
+      .btn.primary:hover {
+        background: #fff;
+      }
+      .btn.danger {
+        color: #ffadb3;
+        background: rgba(105, 30, 37, 0.22);
+        border-color: rgba(255, 103, 112, 0.38);
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .hero-note {
+        margin-top: 17px;
+        color: #71868d;
+        font-size: 10px;
+        letter-spacing: 0.035em;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .note-mark {
+        color: var(--green);
+        font-size: 8px;
+      }
+      .hero-visual {
+        display: grid;
+        gap: 10px;
+      }
+      .hero-photo {
+        position: relative;
+        height: 350px;
+        border: 1px solid var(--line-strong);
+        border-radius: 15px;
+        overflow: hidden;
+        background: #0c191f;
+        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.3);
+      }
+      .hero-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        filter: saturate(0.72) brightness(0.7);
+        transition: transform 8s ease;
+      }
+      .hero-photo:hover img {
+        transform: scale(1.045);
+      }
+      .photo-shade {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          180deg,
+          transparent 20%,
+          rgba(2, 8, 11, 0.1) 45%,
+          rgba(2, 8, 11, 0.92) 100%
+        );
+      }
+      .photo-caption {
+        position: absolute;
+        left: 17px;
+        right: 17px;
+        bottom: 15px;
+        display: grid;
+        gap: 4px;
+      }
+      .photo-caption span {
+        font-size: 8px;
+        letter-spacing: 0.16em;
+        color: #9eafb2;
+      }
+      .photo-caption strong {
+        font-size: 16px;
+        line-height: 1.25;
+      }
+      .photo-caption small {
+        font-size: 9px;
+        color: #819398;
+      }
+      .hero-signal {
+        background: rgba(8, 21, 27, 0.86);
+        border: 1px solid var(--line-strong);
+        border-radius: 12px;
+        padding: 14px 15px;
+        backdrop-filter: blur(14px);
+      }
+      .signal-top {
+        display: flex;
+        justify-content: space-between;
+        color: #81969c;
+        font-size: 9px;
+        letter-spacing: 0.13em;
+        font-weight: 850;
+      }
+      .live-chip {
+        color: #68dfa9;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .live-chip i {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #68dfa9;
+        box-shadow: 0 0 12px #68dfa9;
+        animation: live 1.8s infinite;
+      }
+      @keyframes live {
+        50% {
+          box-shadow: 0 0 0 5px rgba(104, 223, 169, 0);
+        }
+      }
+      .signal-score {
+        display: flex;
+        align-items: end;
+        gap: 13px;
+        margin-top: 7px;
+      }
+      .signal-score #riskScore {
+        font-size: 42px;
+        line-height: 1;
+        font-weight: 900;
+        letter-spacing: -0.06em;
+      }
+      .risk-pill {
+        display: inline-flex;
+        padding: 6px 8px;
+        border-radius: 6px;
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: 0.07em;
+        margin-bottom: 3px;
+      }
+      .risk-low {
+        background: rgba(67, 209, 123, 0.12);
+        color: #71ed9f;
+      }
+      .risk-medium {
+        background: rgba(242, 189, 88, 0.12);
+        color: #ffd575;
+      }
+      .risk-high {
+        background: rgba(255, 98, 108, 0.13);
+        color: #ff9aa0;
+      }
+      .risk-critical {
+        background: #ff626c;
+        color: #fff;
+      }
+      .progress {
+        height: 5px;
+        background: #1b3038;
+        border-radius: 99px;
+        overflow: hidden;
+        margin-top: 12px;
+      }
+      .progress > div {
+        height: 100%;
+        width: 0;
+        border-radius: 99px;
+        transition: width 0.65s ease;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.5;
+        margin-top: 6px;
+      }
+      .data-fresh {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #687e85;
+        font-size: 9px;
+        margin-top: 9px;
+      }
+      .data-fresh i {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: #57dfa4;
+      }
+      .watch-strip {
+        display: grid;
+        grid-template-columns: 1.6fr repeat(4, 1fr);
+        margin: 0 0 17px;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+      .watch-title,
+      .watch-item {
+        padding: 14px 15px;
+        border-right: 1px solid var(--line);
+      }
+      .watch-title {
+        display: grid;
+        gap: 3px;
+      }
+      .watch-title span {
+        font-size: 8px;
+        letter-spacing: 0.15em;
+        color: #72868c;
+      }
+      .watch-title strong {
+        font-size: 12px;
+      }
+      .watch-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .watch-item b {
+        font-size: 9px;
+        color: #60d9bd;
+      }
+      .watch-item span {
+        font-size: 10px;
+        color: #9cafb3;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 13px;
+        margin-bottom: 18px;
+      }
+      .card {
+        grid-column: span 3;
+        background: rgba(9, 22, 28, 0.82);
+        border: 1px solid var(--line);
+        border-radius: 15px;
+        padding: 17px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        backdrop-filter: blur(12px);
+      }
+      .card:hover {
+        border-color: rgba(255, 255, 255, 0.15);
+      }
+      .card.wide {
+        grid-column: span 8;
+      }
+      .card.side {
+        grid-column: span 4;
+      }
+      .card.half {
+        grid-column: span 6;
+      }
+      .card.full {
+        grid-column: 1/-1;
+      }
+      .label {
+        font-size: 9px;
+        color: #81959b;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-weight: 800;
+      }
+      .value {
+        font-size: 27px;
+        font-weight: 900;
+        margin-top: 7px;
+        letter-spacing: -0.05em;
+      }
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .metric {
+        background: #09181e;
+        border: 1px solid var(--line);
+        padding: 12px;
+        border-radius: 10px;
+      }
+      .metric b {
+        display: block;
+        font-size: 17px;
+        margin-top: 5px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .mapbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .section-title {
+        font-size: 19px;
+        letter-spacing: -0.045em;
+        margin: 0;
+      }
+      .map {
+        height: 500px;
+        border-radius: 11px;
+        overflow: hidden;
+        background: #0a171c;
+      }
+      #map {
+        height: 100%;
+        width: 100%;
+      }
+      .leaflet-container {
+        font: inherit;
+      }
+      .leaflet-popup-content-wrapper,
+      .leaflet-popup-tip {
+        background: #0c1c23;
+        color: #fff;
+      }
+      .leaflet-popup-content {
+        font-size: 12px;
+      }
+      .forecast {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        margin-top: 12px;
+      }
+      .forecast .f {
+        background: #09181e;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        padding: 9px;
+      }
+      .f .time {
+        font-size: 9px;
+        color: #74888f;
+      }
+      .f strong {
+        display: block;
+        margin: 6px 0;
+        font-size: 13px;
+      }
+      .f span {
+        font-size: 10px;
+        color: #a5b6bb;
+      }
+      .notice {
+        border: 1px solid rgba(242, 189, 88, 0.2);
+        background: rgba(242, 189, 88, 0.055);
+        border-radius: 10px;
+        padding: 12px;
+        color: #d5c891;
+        font-size: 11px;
+        line-height: 1.55;
+      }
+      .report-list,
+      .place-list {
+        display: grid;
+        gap: 7px;
+        margin-top: 12px;
+        max-height: 390px;
+        overflow: auto;
+      }
+      .report {
+        border: 1px solid var(--line);
+        background: #09181e;
+        border-radius: 10px;
+        padding: 12px;
+        display: flex;
+        justify-content: space-between;
+        gap: 13px;
+      }
+      .report .rtype {
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .report p {
+        margin: 4px 0;
+        color: #aebdc2;
+        font-size: 11px;
+        line-height: 1.4;
+      }
+      .report .time {
+        font-size: 9px;
+        color: #6e838a;
+        white-space: nowrap;
+      }
+      .place {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 11px;
+        background: #09181e;
+      }
+      .place-name {
+        font-weight: 800;
+        font-size: 11px;
+      }
+      .place-meta {
+        font-size: 9px;
+        color: #7f9399;
+        margin-top: 3px;
+      }
+      .place a {
+        font-size: 10px;
+        color: var(--green);
+        text-decoration: none;
+        font-weight: 850;
+        white-space: nowrap;
+      }
+      .emergency {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 7px;
+        margin-top: 10px;
+      }
+      .emergency a {
+        display: block;
+        text-decoration: none;
+        border: 1px solid var(--line);
+        background: #09181e;
+        border-radius: 10px;
+        padding: 12px;
+      }
+      .emergency b {
+        display: block;
+        font-size: 18px;
+      }
+      .emergency span {
+        font-size: 10px;
+        color: #7f9399;
+      }
+      footer {
+        padding: 30px 0 50px;
+        color: #687d84;
+        font-size: 10px;
+        line-height: 1.7;
+      }
+      footer a {
+        color: #93a8ae;
+      }
+      .live-alert {
+        position: fixed;
+        right: 22px;
+        bottom: 20px;
+        z-index: 5000;
+        min-width: 310px;
+        max-width: 430px;
+        background: rgba(10, 27, 33, 0.95);
+        border: 1px solid #3a525a;
+        border-radius: 12px;
+        padding: 12px 14px;
+        display: none;
+        grid-template-columns: auto 1fr auto;
+        gap: 10px;
+        align-items: center;
+        box-shadow: 0 20px 70px rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(16px);
+      }
+      .live-alert.show {
+        display: grid;
+        animation: alertIn 0.25s ease;
+      }
+      .live-alert.danger {
+        border-color: rgba(255, 98, 108, 0.48);
+      }
+      .alert-icon {
+        font-size: 17px;
+      }
+      .live-alert strong {
+        display: block;
+        font-size: 12px;
+      }
+      .live-alert span {
+        display: block;
+        color: #9cafb4;
+        font-size: 10px;
+        margin-top: 3px;
+        line-height: 1.4;
+      }
+      .live-alert button {
+        border: 0;
+        background: transparent;
+        color: #81949a;
+        font-size: 19px;
+      }
+      @keyframes alertIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(1, 6, 9, 0.77);
+        backdrop-filter: blur(9px);
+        display: none;
+        place-items: center;
+        z-index: 3000;
+        padding: 20px;
+      }
+      .modal.open {
+        display: grid;
+      }
+      .modal-box {
+        width: min(560px, 100%);
+        background: #0b1b22;
+        border: 1px solid var(--line-strong);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+      }
+      .modal-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .modal h2 {
+        margin: 0;
+        font-size: 19px;
+      }
+      .close {
+        background: transparent;
+        border: 0;
+        color: #94a8ad;
+        font-size: 23px;
+      }
+      .field {
+        margin-top: 14px;
+      }
+      .field label {
+        display: block;
+        font-size: 10px;
+        color: #91a5aa;
+        margin-bottom: 6px;
+        font-weight: 800;
+      }
+      .field input,
+      .field select,
+      .field textarea {
+        width: 100%;
+        background: #07151b;
+        color: #fff;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        padding: 10px;
+        outline: 0;
+      }
+      .field textarea {
+        min-height: 100px;
+        resize: vertical;
+      }
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .toast {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        z-index: 4000;
+        background: #10242b;
+        border: 1px solid var(--line-strong);
+        padding: 12px 14px;
+        border-radius: 10px;
+        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.38);
+        display: none;
+        max-width: 360px;
+        font-size: 11px;
+      }
+      .toast.show {
+        display: block;
+      }
+      @media (max-width: 1100px) {
+        :root {
+          --sidebar: 190px;
+        }
+        main.wrap {
+          padding: 0 22px;
+        }
+        .hero {
+          grid-template-columns: 1fr;
+        }
+        .hero-visual {
+          grid-template-columns: 1fr 1fr;
+        }
+        .card {
+          grid-column: span 6;
+        }
+        .card.wide,
+        .card.side {
+          grid-column: 1/-1;
+        }
+      }
+      @media (max-width: 760px) {
+        :root {
+          --sidebar: 0px;
+        }
+        header {
+          position: relative;
+          width: 100%;
+          height: auto;
+          border-right: 0;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .nav {
+          height: auto;
+          padding: 13px;
+          gap: 9px;
+        }
+        .brand {
+          padding: 2px 6px 8px;
+        }
+        .navlinks {
+          flex-direction: row;
+          overflow: auto;
+        }
+        .navlinks a {
+          white-space: nowrap;
+          padding: 8px 10px;
+        }
+        .status {
+          margin-top: 0;
+        }
+        main.wrap {
+          margin-left: 0;
+          padding: 0 14px;
+        }
+        .hero {
+          padding: 48px 0 24px;
+          min-height: auto;
+        }
+        .hero-visual {
+          grid-template-columns: 1fr;
+        }
+        .hero-photo {
+          height: 300px;
+        }
+        h1 {
+          font-size: 48px;
+        }
+        .watch-strip {
+          grid-template-columns: 1fr 1fr;
+        }
+        .watch-title {
+          grid-column: 1/-1;
+        }
+        .watch-item {
+          border-top: 1px solid var(--line);
+        }
+        .card,
+        .card.wide,
+        .card.side,
+        .card.half {
+          grid-column: 1/-1;
+        }
+        .metrics {
+          grid-template-columns: 1fr 1fr;
+        }
+        .forecast {
+          grid-template-columns: 1fr 1fr;
+        }
+        .emergency {
+          grid-template-columns: 1fr;
+        }
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+        .map {
+          height: 410px;
+        }
+      }
+      @media (max-width: 480px) {
+        .watch-strip {
+          grid-template-columns: 1fr;
+        }
+        .watch-title {
+          grid-column: auto;
+        }
+        .watch-item {
+          border-right: 0;
+        }
+        .metrics {
+          grid-template-columns: 1fr;
+        }
+        .hero-actions .btn {
+          width: 100%;
+        }
+        .live-alert {
+          left: 12px;
+          right: 12px;
+          min-width: 0;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .rain-layer,
+        .rain-drop,
+        .live-chip i {
+          animation: none !important;
+        }
+        .btn,
+        .hero-photo img {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
 
-<body>
-<div class="rain-field" aria-hidden="true">
-  <span class="rain-layer rain-layer-a"></span>
-  <span class="rain-layer rain-layer-b"></span>
-  <span class="rain-vignette"></span>
-</div>
+  <body>
+    <div class="rain-field" aria-hidden="true">
+      <span class="rain-layer rain-layer-a"></span>
+      <span class="rain-layer rain-layer-b"></span>
+      <span class="rain-vignette"></span>
+    </div>
 
-<div class="rain-layer" id="rainLayer" aria-hidden="true"></div><div class="weather-orb" aria-hidden="true"></div>
-<header>
-  <div class="wrap nav">
-    <a class="brand" href="#"><span class="brand-mark">⌁</span> SlopeWatch</a>
-    <nav class="navlinks">
-      <a href="#dashboard">Dashboard</a><a href="#reports">Reports</a><a href="#safety">Safety</a>
-    </nav>
-    <div class="status"><span class="dot"></span><span id="liveStatus">Connecting live data…</span></div>
-  </div>
-</header>
-
-<main class="wrap">
-  <section class="hero editorial-hero" id="dashboard">
-    <div class="hero-copy">
-      <div class="eyebrow"><span class="eyebrow-line"></span> Live slope conditions</div>
-      <h1>Watch the rain.<br><em>Read the slope.</em></h1>
-      <p class="hero-lead">
-        SlopeWatch brings rainfall, terrain and local observations into one clear view so people can see changing conditions before they become an emergency.
-      </p>
-      <div class="hero-actions">
-        <button class="btn primary" id="locateBtn">📍 Use my location</button>
-        <button class="btn" id="refreshBtn">Refresh live data</button>
-        <button class="btn danger" id="reportBtn">Report a hazard</button>
+    <div class="rain-layer" id="rainLayer" aria-hidden="true"></div>
+    <div class="weather-orb" aria-hidden="true"></div>
+    <header>
+      <div class="wrap nav">
+        <a class="brand" href="#"
+          ><span class="brand-mark">⌁</span> SlopeWatch</a
+        >
+        <nav class="navlinks">
+          <a href="#dashboard">Dashboard</a><a href="#reports">Reports</a
+          ><a href="#safety">Safety</a>
+        </nav>
+        <div class="status">
+          <span class="dot"></span
+          ><span id="liveStatus">Connecting live data…</span>
+        </div>
       </div>
-      <div class="hero-note">
-        <span class="note-mark">●</span>
-        Early-warning prototype · informational only · follow official authorities
+    </header>
+
+    <main class="wrap">
+      <section class="hero editorial-hero" id="dashboard">
+        <div class="hero-copy">
+          <div class="eyebrow">
+            <span class="eyebrow-line"></span> Live slope conditions
+          </div>
+          <h1>Watch the rain.<br /><em>Read the slope.</em></h1>
+          <p class="hero-lead">
+            SlopeWatch brings rainfall, terrain and local observations into one
+            clear view so people can see changing conditions before they become
+            an emergency.
+          </p>
+          <div class="hero-actions">
+            <button class="btn primary" id="locateBtn">
+              📍 Use my location
+            </button>
+            <button class="btn" id="refreshBtn">Refresh live data</button>
+            <button class="btn danger" id="reportBtn">Report a hazard</button>
+          </div>
+          <div class="hero-note">
+            <span class="note-mark">●</span>
+            Early-warning prototype · informational only · follow official
+            authorities
+          </div>
+        </div>
+
+        <div class="hero-visual">
+          <div class="hero-photo">
+            <img
+              src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Mucky_mountain_road_between_Manali_and_Rohtang_in_2009.jpg"
+              alt="Rain-affected mountain road"
+              loading="eager"
+            />
+            <div class="photo-shade"></div>
+            <div class="photo-caption">
+              <span>FIELD CONTEXT</span>
+              <strong>Rain can rapidly change mountain-road conditions.</strong>
+              <small>Reference image · Kiran Jonnalagadda · CC BY-SA 2.0</small>
+            </div>
+          </div>
+          <div class="hero-signal">
+            <div class="signal-top">
+              <span>LOCAL RISK SIGNAL</span>
+              <span class="live-chip"><i></i> LIVE</span>
+            </div>
+            <div class="signal-score">
+              <span id="riskScore">—%</span>
+              <div id="riskPill" class="risk-pill risk-medium">ANALYZING</div>
+            </div>
+            <div class="progress"><div id="riskBar"></div></div>
+            <div class="sub" id="riskReason">
+              Allow location access to calculate your local signal.
+            </div>
+            <div class="data-fresh">
+              <i></i><span id="freshText">Waiting for live data</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="watch-strip" aria-label="Signals used by SlopeWatch">
+        <div class="watch-title">
+          <span>WHAT WE WATCH</span>
+          <strong>Four signals. One local picture.</strong>
+        </div>
+        <div class="watch-item"><b>01</b><span>Rainfall intensity</span></div>
+        <div class="watch-item"><b>02</b><span>24h accumulation</span></div>
+        <div class="watch-item"><b>03</b><span>Terrain relief</span></div>
+        <div class="watch-item"><b>04</b><span>Community reports</span></div>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <div class="label">Rainfall · 1h</div>
+          <div class="value" id="rain1">—</div>
+          <div class="sub">Current precipitation</div>
+        </article>
+        <article class="card">
+          <div class="label">Rainfall · 24h</div>
+          <div class="value" id="rain24">—</div>
+          <div class="sub">Accumulated from hourly data</div>
+        </article>
+        <article class="card">
+          <div class="label">Terrain relief</div>
+          <div class="value" id="relief">—</div>
+          <div class="sub">Local elevation variation</div>
+        </article>
+        <article class="card">
+          <div class="label">Reports · 5 km</div>
+          <div class="value" id="reportCount">—</div>
+          <div class="sub">Recent community signals</div>
+        </article>
+
+        <article class="card wide">
+          <div class="mapbar">
+            <div>
+              <h2 class="section-title">Live risk map</h2>
+              <div class="sub">
+                Your location, reported hazards and nearby response facilities
+              </div>
+            </div>
+            <button class="btn" id="recenterBtn">Recenter</button>
+          </div>
+          <div class="map"><div id="map"></div></div>
+          <div class="metrics">
+            <div class="metric">
+              <span class="label">Location</span
+              ><b id="locationText">Waiting…</b>
+            </div>
+            <div class="metric">
+              <span class="label">Elevation</span><b id="elevation">— m</b>
+            </div>
+            <div class="metric">
+              <span class="label">Humidity</span><b id="humidity">—%</b>
+            </div>
+            <div class="metric">
+              <span class="label">Wind</span><b id="wind">— km/h</b>
+            </div>
+          </div>
+        </article>
+
+        <article class="card side">
+          <h2 class="section-title">6-hour outlook</h2>
+          <div class="sub">Short-term precipitation and weather signal.</div>
+          <div id="forecast" class="forecast"></div>
+          <div class="notice" style="margin-top: 14px">
+            <b>How the signal works:</b> rainfall intensity + 24h accumulation +
+            forecast rain + terrain relief + recent reports. The result is a
+            transparent prototype score, not a scientifically certified
+            landslide forecast.
+          </div>
+        </article>
+
+        <article class="card half" id="reports">
+          <h2 class="section-title">Citizen hazard reports</h2>
+          <div class="sub">
+            Unverified reports are shown as community observations. Never treat
+            a single report as confirmation.
+          </div>
+          <div id="reportList" class="report-list"></div>
+        </article>
+
+        <article class="card half" id="safety">
+          <h2 class="section-title">Nearest help</h2>
+          <div class="sub">
+            Nearby hospitals, police and fire services from OpenStreetMap.
+          </div>
+          <div id="placeList" class="place-list">
+            <div class="sub">Use your location to load nearby services.</div>
+          </div>
+          <div class="emergency">
+            <a href="tel:112"><b>112</b><span>India emergency</span></a>
+            <a href="tel:108"><b>108</b><span>Kerala ambulance</span></a>
+            <a href="tel:101"><b>101</b><span>Fire & rescue</span></a>
+          </div>
+        </article>
+
+        <article class="card full">
+          <h2 class="section-title">If the risk is HIGH</h2>
+          <div class="sub" style="max-width: 900px">
+            Move away from steep slopes, retaining walls, gullies and visibly
+            damaged roads. Avoid crossing flowing water or recently failed
+            ground. Follow official instructions from local authorities. If you
+            are in immediate danger, call emergency services.
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <footer class="wrap">
+      <b>SlopeWatch</b> is a hackathon-ready early-warning prototype. Risk
+      values are informational and are not an official warning, evacuation
+      order, or substitute for local disaster-management authorities.<br />
+      Field image: Kiran Jonnalagadda / Wikimedia Commons, CC BY-SA 2.0 ·
+      Weather:
+      <a href="https://open-meteo.com/" target="_blank" rel="noreferrer"
+        >Open-Meteo</a
+      >
+      · Terrain: Copernicus DEM via Open-Meteo · Map & places:
+      <a href="https://www.openstreetmap.org/" target="_blank" rel="noreferrer"
+        >OpenStreetMap</a
+      >.
+    </footer>
+
+    <div class="live-alert" id="liveAlert">
+      <div class="alert-icon" id="liveAlertIcon">⚠️</div>
+      <div>
+        <strong id="liveAlertTitle">SlopeWatch alert</strong
+        ><span id="liveAlertText">Live conditions changed.</span>
+      </div>
+      <button id="closeAlert" aria-label="Close">×</button>
+    </div>
+
+    <div class="modal" id="reportModal">
+      <div class="modal-box">
+        <div class="modal-head">
+          <h2>Report a hazard</h2>
+          <button class="close" id="closeModal">×</button>
+        </div>
+        <div class="sub">
+          Your current GPS position will be attached to this community report.
+        </div>
+        <form id="reportForm">
+          <div class="form-row">
+            <div class="field">
+              <label>Hazard type</label>
+              <select id="reportType" required>
+                <option value="ground_crack">Ground crack</option>
+                <option value="water_seepage">Water seepage</option>
+                <option value="rockfall">Rockfall</option>
+                <option value="soil_movement">Soil movement</option>
+                <option value="road_damage">Road damage</option>
+                <option value="landslide">Landslide</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>GPS</label
+              ><input id="reportGps" disabled value="Waiting…" />
+            </div>
+          </div>
+          <div class="field">
+            <label>Description</label
+            ><textarea
+              id="reportDescription"
+              required
+              maxlength="600"
+              placeholder="What did you observe? Example: fresh crack beside the road, water emerging from slope…"
+            ></textarea>
+          </div>
+          <div class="field">
+            <label>Optional photo</label
+            ><input
+              id="reportPhoto"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+            />
+          </div>
+          <div class="hero-actions">
+            <button class="btn" type="button" id="cancelReport">Cancel</button
+            ><button class="btn primary" type="submit">Submit report</button>
+          </div>
+        </form>
       </div>
     </div>
 
-    <div class="hero-visual">
-      <div class="hero-photo">
-        <img
-          src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Mucky_mountain_road_between_Manali_and_Rohtang_in_2009.jpg"
-          alt="Rain-affected mountain road"
-          loading="eager"
-        />
-        <div class="photo-shade"></div>
-        <div class="photo-caption">
-          <span>FIELD CONTEXT</span>
-          <strong>Rain can rapidly change mountain-road conditions.</strong>
-          <small>Reference image · Kiran Jonnalagadda · CC BY-SA 2.0</small>
-        </div>
-      </div>
-      <div class="hero-signal">
-        <div class="signal-top">
-          <span>LOCAL RISK SIGNAL</span>
-          <span class="live-chip"><i></i> LIVE</span>
-        </div>
-        <div class="signal-score"><span id="riskScore">—%</span><div id="riskPill" class="risk-pill risk-medium">ANALYZING</div></div>
-        <div class="progress"><div id="riskBar"></div></div>
-        <div class="sub" id="riskReason">Allow location access to calculate your local signal.</div>
-        <div class="data-fresh"><i></i><span id="freshText">Waiting for live data</span></div>
-      </div>
-    </div>
-  </section>
+    <div class="toast" id="toast"></div>
 
-  
-<section class="watch-strip" aria-label="Signals used by SlopeWatch">
-  <div class="watch-title">
-    <span>WHAT WE WATCH</span>
-    <strong>Four signals. One local picture.</strong>
-  </div>
-  <div class="watch-item"><b>01</b><span>Rainfall intensity</span></div>
-  <div class="watch-item"><b>02</b><span>24h accumulation</span></div>
-  <div class="watch-item"><b>03</b><span>Terrain relief</span></div>
-  <div class="watch-item"><b>04</b><span>Community reports</span></div>
-</section>
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script>
+      (() => {
+        "use strict";
 
-<section class="grid">
-    <article class="card"><div class="label">Rainfall · 1h</div><div class="value" id="rain1">—</div><div class="sub">Current precipitation</div></article>
-    <article class="card"><div class="label">Rainfall · 24h</div><div class="value" id="rain24">—</div><div class="sub">Accumulated from hourly data</div></article>
-    <article class="card"><div class="label">Terrain relief</div><div class="value" id="relief">—</div><div class="sub">Local elevation variation</div></article>
-    <article class="card"><div class="label">Reports · 5 km</div><div class="value" id="reportCount">—</div><div class="sub">Recent community signals</div></article>
+        const state = {
+          lat: null,
+          lon: null,
+          weather: null,
+          elevation: null,
+          relief: null,
+          reports: [],
+          map: null,
+          userMarker: null,
+          reportLayer: null,
+          placeLayer: null,
+        };
 
-    <article class="card wide">
-      <div class="mapbar"><div><h2 class="section-title">Live risk map</h2><div class="sub">Your location, reported hazards and nearby response facilities</div></div><button class="btn" id="recenterBtn">Recenter</button></div>
-      <div class="map"><div id="map"></div></div>
-      <div class="metrics">
-        <div class="metric"><span class="label">Location</span><b id="locationText">Waiting…</b></div>
-        <div class="metric"><span class="label">Elevation</span><b id="elevation">— m</b></div>
-        <div class="metric"><span class="label">Humidity</span><b id="humidity">—%</b></div>
-        <div class="metric"><span class="label">Wind</span><b id="wind">— km/h</b></div>
-      </div>
-    </article>
+        const $ = (id) => document.getElementById(id);
+        const toast = (msg, type = "success") => {
+          const el = $("toast");
+          el.textContent = msg;
+          el.className = "toast show " + type;
+          clearTimeout(toast.t);
+          toast.t = setTimeout(() => el.classList.remove("show"), 3800);
+        };
 
-    <article class="card side">
-      <h2 class="section-title">6-hour outlook</h2>
-      <div class="sub">Short-term precipitation and weather signal.</div>
-      <div id="forecast" class="forecast"></div>
-      <div class="notice" style="margin-top:14px">
-        <b>How the signal works:</b> rainfall intensity + 24h accumulation + forecast rain + terrain relief + recent reports.
-        The result is a transparent prototype score, not a scientifically certified landslide forecast.
-      </div>
-    </article>
+        function showAlert(title, text, type = "warning") {
+          const el = $("liveAlert");
+          $("liveAlertTitle").textContent = title;
+          $("liveAlertText").textContent = text;
+          $("liveAlertIcon").textContent = type === "danger" ? "🚨" : "⚠️";
+          el.classList.toggle("danger", type === "danger");
+          el.classList.add("show");
+          clearTimeout(showAlert.t);
+          showAlert.t = setTimeout(() => el.classList.remove("show"), 8000);
+        }
+        $("closeAlert").addEventListener("click", () =>
+          $("liveAlert").classList.remove("show"),
+        );
 
-    <article class="card half" id="reports">
-      <h2 class="section-title">Citizen hazard reports</h2>
-      <div class="sub">Unverified reports are shown as community observations. Never treat a single report as confirmation.</div>
-      <div id="reportList" class="report-list"></div>
-    </article>
+        function buildRain() {
+          const layer = $("rainLayer");
+          for (let i = 0; i < 85; i++) {
+            const d = document.createElement("i");
+            d.className = "rain-drop";
+            d.style.left = Math.random() * 105 + "%";
+            d.style.height = 35 + Math.random() * 65 + "px";
+            d.style.opacity = (0.18 + Math.random() * 0.55).toFixed(2);
+            d.style.animationDuration =
+              (0.55 + Math.random() * 1.1).toFixed(2) + "s";
+            d.style.animationDelay = (-Math.random() * 2.2).toFixed(2) + "s";
+            layer.appendChild(d);
+          }
+        }
+        buildRain();
 
-    <article class="card half" id="safety">
-      <h2 class="section-title">Nearest help</h2>
-      <div class="sub">Nearby hospitals, police and fire services from OpenStreetMap.</div>
-      <div id="placeList" class="place-list"><div class="sub">Use your location to load nearby services.</div></div>
-      <div class="emergency">
-        <a href="tel:112"><b>112</b><span>India emergency</span></a>
-        <a href="tel:108"><b>108</b><span>Kerala ambulance</span></a>
-        <a href="tel:101"><b>101</b><span>Fire & rescue</span></a>
-      </div>
-    </article>
+        function setStatus(text, ok = true) {
+          $("liveStatus").textContent = text;
+          $("freshText").textContent = text;
+          document.querySelector(".dot").style.background = ok
+            ? "var(--green)"
+            : "var(--red)";
+          document.querySelector(".dot").style.boxShadow = ok
+            ? "0 0 12px var(--green)"
+            : "0 0 12px var(--red)";
+        }
 
-    <article class="card full">
-      <h2 class="section-title">If the risk is HIGH</h2>
-      <div class="sub" style="max-width:900px">
-        Move away from steep slopes, retaining walls, gullies and visibly damaged roads. Avoid crossing flowing water or recently failed ground.
-        Follow official instructions from local authorities. If you are in immediate danger, call emergency services.
-      </div>
-    </article>
-  </section>
-</main>
+        function haversine(a, b, c, d) {
+          const R = 6371,
+            p = Math.PI / 180,
+            x = (c - a) * p,
+            y = (d - b) * p;
+          const q =
+            Math.sin(x / 2) ** 2 +
+            Math.cos(a * p) * Math.cos(c * p) * Math.sin(y / 2) ** 2;
+          return R * 2 * Math.atan2(Math.sqrt(q), Math.sqrt(1 - q));
+        }
 
-<footer class="wrap">
-  <b>SlopeWatch</b> is a hackathon-ready early-warning prototype. Risk values are informational and are not an official warning,
-  evacuation order, or substitute for local disaster-management authorities.<br>
-  Field image: Kiran Jonnalagadda / Wikimedia Commons, CC BY-SA 2.0 · Weather: <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a> ·
-  Terrain: Copernicus DEM via Open-Meteo · Map & places: <a href="https://www.openstreetmap.org/" target="_blank" rel="noreferrer">OpenStreetMap</a>.
-</footer>
+        function initMap() {
+          state.map = L.map("map", { zoomControl: true }).setView(
+            [10.05, 76.27],
+            8,
+          );
+          L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: "&copy; OpenStreetMap contributors",
+          }).addTo(state.map);
+          state.reportLayer = L.layerGroup().addTo(state.map);
+          state.placeLayer = L.layerGroup().addTo(state.map);
+        }
 
-<div class="live-alert" id="liveAlert"><div class="alert-icon" id="liveAlertIcon">⚠️</div><div><strong id="liveAlertTitle">SlopeWatch alert</strong><span id="liveAlertText">Live conditions changed.</span></div><button id="closeAlert" aria-label="Close">×</button></div>
+        function updateMap() {
+          if (state.lat == null) return;
+          const ll = [state.lat, state.lon];
+          if (!state.userMarker) {
+            state.userMarker = L.marker(ll)
+              .addTo(state.map)
+              .bindPopup("<b>You are here</b>");
+          } else state.userMarker.setLatLng(ll);
+          state.map.setView(ll, 13);
+          renderReportMarkers();
+        }
 
-<div class="modal" id="reportModal">
-  <div class="modal-box">
-    <div class="modal-head"><h2>Report a hazard</h2><button class="close" id="closeModal">×</button></div>
-    <div class="sub">Your current GPS position will be attached to this community report.</div>
-    <form id="reportForm">
-      <div class="form-row">
-        <div class="field"><label>Hazard type</label>
-          <select id="reportType" required>
-            <option value="ground_crack">Ground crack</option>
-            <option value="water_seepage">Water seepage</option>
-            <option value="rockfall">Rockfall</option>
-            <option value="soil_movement">Soil movement</option>
-            <option value="road_damage">Road damage</option>
-            <option value="landslide">Landslide</option>
-          </select>
-        </div>
-        <div class="field"><label>GPS</label><input id="reportGps" disabled value="Waiting…"></div>
-      </div>
-      <div class="field"><label>Description</label><textarea id="reportDescription" required maxlength="600" placeholder="What did you observe? Example: fresh crack beside the road, water emerging from slope…"></textarea></div>
-      <div class="field"><label>Optional photo</label><input id="reportPhoto" type="file" accept="image/jpeg,image/png,image/webp"></div>
-      <div class="hero-actions"><button class="btn" type="button" id="cancelReport">Cancel</button><button class="btn primary" type="submit">Submit report</button></div>
-    </form>
-  </div>
-</div>
+        function renderReportMarkers() {
+          state.reportLayer.clearLayers();
+          state.reports.forEach((r) => {
+            const color =
+              r.type === "landslide"
+                ? "#ff626c"
+                : r.type === "ground_crack"
+                  ? "#ffca55"
+                  : "#57a8ff";
+            const icon = L.divIcon({
+              className: "",
+              html:
+                '<div style="width:18px;height:18px;border-radius:50%;background:' +
+                color +
+                ";border:3px solid #07131d;box-shadow:0 0 0 2px " +
+                color +
+                '66"></div>',
+              iconSize: [18, 18],
+              iconAnchor: [9, 9],
+            });
+            L.marker([r.latitude, r.longitude], { icon })
+              .addTo(state.reportLayer)
+              .bindPopup(
+                "<b>" +
+                  labelType(r.type) +
+                  "</b><br>" +
+                  escapeHtml(r.description) +
+                  "<br><small>Unverified community report</small>",
+              );
+          });
+        }
 
-<div class="toast" id="toast"></div>
+        function escapeHtml(s) {
+          return String(s).replace(
+            /[&<>"']/g,
+            (m) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#039;",
+              })[m],
+          );
+        }
+        function labelType(t) {
+          return t
+            .replaceAll("_", " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase());
+        }
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-        crossorigin=""></script>
-<script>
-(() => {
-  "use strict";
+        async function getLocation() {
+          return new Promise((resolve, reject) => {
+            if (!navigator.geolocation)
+              return reject(
+                new Error("Geolocation is not supported by this browser."),
+              );
+            navigator.geolocation.getCurrentPosition(
+              (p) =>
+                resolve({
+                  lat: p.coords.latitude,
+                  lon: p.coords.longitude,
+                  accuracy: p.coords.accuracy,
+                }),
+              (e) =>
+                reject(
+                  new Error(
+                    e.code === 1
+                      ? "Location permission was denied."
+                      : "Could not get your location.",
+                  ),
+                ),
+              { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 },
+            );
+          });
+        }
 
-  const state = {
-    lat: null, lon: null, weather: null, elevation: null, relief: null,
-    reports: [], map: null, userMarker: null, reportLayer: null, placeLayer: null
-  };
+        async function reverseGeocode(lat, lon) {
+          const u =
+            "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=" +
+            encodeURIComponent(lat) +
+            "&lon=" +
+            encodeURIComponent(lon) +
+            "&zoom=14&addressdetails=1";
+          const r = await fetch(u, { headers: { Accept: "application/json" } });
+          if (!r.ok) throw new Error("Reverse geocoding failed");
+          const j = await r.json();
+          const a = j.address || {};
+          return (
+            a.village ||
+            a.town ||
+            a.city ||
+            a.municipality ||
+            a.county ||
+            j.display_name ||
+            "Current location"
+          );
+        }
 
-  const $ = id => document.getElementById(id);
-  const toast = (msg, type="success") => {
-    const el=$("toast"); el.textContent = msg; el.className = "toast show "+type;
-    clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 3800);
-  };
+        async function getWeather(lat, lon) {
+          const params = new URLSearchParams({
+            latitude: lat,
+            longitude: lon,
+            timezone: "auto",
+            past_days: "1",
+            forecast_days: "2",
+            current:
+              "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,weather_code,wind_speed_10m,surface_pressure",
+            hourly:
+              "precipitation,rain,temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m",
+          });
+          const r = await fetch(
+            "https://api.open-meteo.com/v1/forecast?" + params,
+          );
+          if (!r.ok) throw new Error("Weather service unavailable");
+          return r.json();
+        }
 
-  function showAlert(title,text,type="warning") {
-    const el=$("liveAlert"); $("liveAlertTitle").textContent=title; $("liveAlertText").textContent=text;
-    $("liveAlertIcon").textContent=type==="danger"?"🚨":"⚠️"; el.classList.toggle("danger",type==="danger"); el.classList.add("show");
-    clearTimeout(showAlert.t); showAlert.t=setTimeout(()=>el.classList.remove("show"),8000);
-  }
-  $("closeAlert").addEventListener("click",()=>$("liveAlert").classList.remove("show"));
+        async function getElevationGrid(lat, lon) {
+          const offsets = [
+            [-0.012, -0.012],
+            [-0.012, 0],
+            [-0.012, 0.012],
+            [0, -0.012],
+            [0, 0],
+            [0, 0.012],
+            [0.012, -0.012],
+            [0.012, 0],
+            [0.012, 0.012],
+          ];
+          const lats = offsets.map((o) => lat + o[0]).join(",");
+          const lons = offsets.map((o) => lon + o[1]).join(",");
+          const r = await fetch(
+            "https://api.open-meteo.com/v1/elevation?latitude=" +
+              lats +
+              "&longitude=" +
+              lons,
+          );
+          if (!r.ok) throw new Error("Elevation service unavailable");
+          const j = await r.json();
+          const e = j.elevation || [];
+          return {
+            center: e[4],
+            min: Math.min(...e),
+            max: Math.max(...e),
+            relief: Math.max(...e) - Math.min(...e),
+          };
+        }
 
-  function buildRain(){
-    const layer=$("rainLayer"); for(let i=0;i<85;i++){
-      const d=document.createElement("i"); d.className="rain-drop"; d.style.left=(Math.random()*105)+"%";
-      d.style.height=(35+Math.random()*65)+"px"; d.style.opacity=(.18+Math.random()*.55).toFixed(2);
-      d.style.animationDuration=(.55+Math.random()*1.1).toFixed(2)+"s"; d.style.animationDelay=(-Math.random()*2.2).toFixed(2)+"s"; layer.appendChild(d);
-    }
-  }
-  buildRain();
+        async function loadReports() {
+          if (state.lat == null) return;
+          const r = await fetch(
+            "/api/reports?lat=" +
+              state.lat +
+              "&lon=" +
+              state.lon +
+              "&radiusKm=5",
+          );
+          if (!r.ok) throw new Error("Report service unavailable");
+          state.reports = await r.json();
+          $("reportCount").textContent = state.reports.length;
+          renderReportMarkers();
+          renderReportList();
+        }
 
-  function setStatus(text, ok=true) {
-    $("liveStatus").textContent = text;
-    $("freshText").textContent = text;
-    document.querySelector(".dot").style.background = ok ? "var(--green)" : "var(--red)";
-    document.querySelector(".dot").style.boxShadow = ok ? "0 0 12px var(--green)" : "0 0 12px var(--red)";
-  }
+        function renderReportList() {
+          const el = $("reportList");
+          if (!state.reports.length) {
+            el.innerHTML =
+              '<div class="sub">No reports within 5 km yet. If you see a slope warning sign, report it.</div>';
+            return;
+          }
+          el.innerHTML = state.reports
+            .slice(0, 12)
+            .map((r) => {
+              const mins = Math.max(
+                1,
+                Math.round((Date.now() - new Date(r.createdAt)) / 60000),
+              );
+              return (
+                '<div class="report"><div><div class="rtype">' +
+                labelType(r.type) +
+                "</div><p>" +
+                escapeHtml(r.description) +
+                '</p><div class="time">' +
+                mins +
+                " min ago · " +
+                r.distanceKm.toFixed(1) +
+                ' km away · unverified</div></div><div class="time">' +
+                r.id +
+                "</div></div>"
+              );
+            })
+            .join("");
+        }
 
-  function haversine(a,b,c,d){
-    const R=6371, p=Math.PI/180, x=(c-a)*p, y=(d-b)*p;
-    const q=Math.sin(x/2)**2+Math.cos(a*p)*Math.cos(c*p)*Math.sin(y/2)**2;
-    return R*2*Math.atan2(Math.sqrt(q),Math.sqrt(1-q));
-  }
+        function calcRisk() {
+          const w = state.weather,
+            h = w.current || {};
+          const hourly = w.hourly || {};
+          const times = hourly.time || [],
+            rain = hourly.precipitation || [];
+          const now = new Date();
+          const past24 = times
+            .map((t, i) => ({ t: new Date(t), v: Number(rain[i] || 0) }))
+            .filter((x) => x.t <= now && now - x.t <= 26 * 3600 * 1000)
+            .reduce((s, x) => s + x.v, 0);
 
-  function initMap(){
-    state.map = L.map("map", { zoomControl:true }).setView([10.05,76.27], 8);
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(state.map);
-    state.reportLayer = L.layerGroup().addTo(state.map);
-    state.placeLayer = L.layerGroup().addTo(state.map);
-  }
+          const next24 = times
+            .map((t, i) => ({ t: new Date(t), v: Number(rain[i] || 0) }))
+            .filter((x) => x.t >= now && x.t - now <= 24 * 3600 * 1000)
+            .reduce((s, x) => s + x.v, 0);
 
-  function updateMap(){
-    if(state.lat == null) return;
-    const ll=[state.lat,state.lon];
-    if(!state.userMarker) {
-      state.userMarker=L.marker(ll).addTo(state.map).bindPopup("<b>You are here</b>");
-    } else state.userMarker.setLatLng(ll);
-    state.map.setView(ll, 13);
-    renderReportMarkers();
-  }
+          const r1 = Number(h.precipitation || 0);
+          const relief = Number(state.relief || 0);
+          const reports = state.reports || [];
+          const reportWeights = {
+            landslide: 28,
+            ground_crack: 16,
+            water_seepage: 12,
+            soil_movement: 16,
+            rockfall: 10,
+            road_damage: 8,
+          };
+          let reportScore = 0;
+          const recentCut = Date.now() - 48 * 3600 * 1000;
+          reports.forEach((r) => {
+            if (new Date(r.createdAt) >= recentCut)
+              reportScore += reportWeights[r.type] || 5;
+          });
+          reportScore = Math.min(25, reportScore);
 
-  function renderReportMarkers(){
-    state.reportLayer.clearLayers();
-    state.reports.forEach(r=>{
-      const color = r.type==="landslide" ? "#ff626c" : r.type==="ground_crack" ? "#ffca55" : "#57a8ff";
-      const icon = L.divIcon({
-        className:"",
-        html:'<div style="width:18px;height:18px;border-radius:50%;background:'+color+';border:3px solid #07131d;box-shadow:0 0 0 2px '+color+'66"></div>',
-        iconSize:[18,18], iconAnchor:[9,9]
-      });
-      L.marker([r.latitude,r.longitude],{icon}).addTo(state.reportLayer)
-       .bindPopup("<b>"+labelType(r.type)+"</b><br>"+escapeHtml(r.description)+"<br><small>Unverified community report</small>");
-    });
-  }
+          const rain1Score = Math.min(22, (r1 / 2.5) * 22);
+          const rain24Score = Math.min(28, (past24 / 180) * 28);
+          const forecastScore = Math.min(15, (next24 / 160) * 15);
+          const terrainScore = Math.min(10, (relief / 180) * 10);
+          const score = Math.round(
+            Math.min(
+              100,
+              rain1Score +
+                rain24Score +
+                forecastScore +
+                terrainScore +
+                reportScore,
+            ),
+          );
 
-  function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
-  }
-  function labelType(t){return t.replaceAll("_"," ").replace(/\b\w/g,c=>c.toUpperCase())}
+          let level = score >= 75 ? "HIGH" : score >= 50 ? "MEDIUM" : "LOW";
+          if (score >= 90) level = "CRITICAL";
 
-  async function getLocation(){
-    return new Promise((resolve,reject)=>{
-      if(!navigator.geolocation) return reject(new Error("Geolocation is not supported by this browser."));
-      navigator.geolocation.getCurrentPosition(
-        p=>resolve({lat:p.coords.latitude,lon:p.coords.longitude,accuracy:p.coords.accuracy}),
-        e=>reject(new Error(e.code===1 ? "Location permission was denied." : "Could not get your location.")),
-        {enableHighAccuracy:true,timeout:15000,maximumAge:60000}
-      );
-    });
-  }
+          let reasons = [];
+          if (r1 >= 15) reasons.push("intense current rain");
+          else if (r1 >= 5) reasons.push("elevated current rain");
+          if (past24 >= 120) reasons.push("heavy 24-hour accumulation");
+          else if (past24 >= 60)
+            reasons.push("significant 24-hour accumulation");
+          if (next24 >= 100) reasons.push("heavy rain forecast");
+          if (relief >= 120) reasons.push("high local relief");
+          if (reports.length)
+            reasons.push(
+              reports.length +
+                " recent community report" +
+                (reports.length > 1 ? "s" : ""),
+            );
+          if (!reasons.length)
+            reasons.push("no strong short-term trigger detected");
 
-  async function reverseGeocode(lat,lon){
-    const u = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat="+encodeURIComponent(lat)+"&lon="+encodeURIComponent(lon)+"&zoom=14&addressdetails=1";
-    const r=await fetch(u,{headers:{Accept:"application/json"}});
-    if(!r.ok) throw new Error("Reverse geocoding failed");
-    const j=await r.json();
-    const a=j.address||{};
-    return a.village||a.town||a.city||a.municipality||a.county||j.display_name||"Current location";
-  }
+          return { score, level, past24, next24, reasons };
+        }
 
-  async function getWeather(lat,lon){
-    const params = new URLSearchParams({
-      latitude:lat, longitude:lon, timezone:"auto", past_days:"1",
-      forecast_days:"2",
-      current:"temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,weather_code,wind_speed_10m,surface_pressure",
-      hourly:"precipitation,rain,temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m"
-    });
-    const r=await fetch("https://api.open-meteo.com/v1/forecast?"+params);
-    if(!r.ok) throw new Error("Weather service unavailable");
-    return r.json();
-  }
+        function renderWeather() {
+          const w = state.weather,
+            c = w.current || {},
+            calc = calcRisk();
+          $("rain1").textContent =
+            Number(c.precipitation || 0).toFixed(1) + " mm";
+          $("rain24").textContent = calc.past24.toFixed(1) + " mm";
+          $("relief").textContent = Math.round(state.relief || 0) + " m";
+          $("elevation").textContent = Math.round(state.elevation || 0) + " m";
+          $("humidity").textContent =
+            Math.round(c.relative_humidity_2m || 0) + "%";
+          $("wind").textContent = Math.round(c.wind_speed_10m || 0) + " km/h";
 
-  async function getElevationGrid(lat,lon){
-    const offsets=[[-.012,-.012],[-.012,0],[-.012,.012],[0,-.012],[0,0],[0,.012],[.012,-.012],[.012,0],[.012,.012]];
-    const lats=offsets.map(o=>lat+o[0]).join(",");
-    const lons=offsets.map(o=>lon+o[1]).join(",");
-    const r=await fetch("https://api.open-meteo.com/v1/elevation?latitude="+lats+"&longitude="+lons);
-    if(!r.ok) throw new Error("Elevation service unavailable");
-    const j=await r.json();
-    const e=j.elevation||[];
-    return {center:e[4], min:Math.min(...e), max:Math.max(...e), relief:Math.max(...e)-Math.min(...e)};
-  }
+          const pill = $("riskPill");
+          pill.textContent = calc.level + " RISK";
+          pill.className = "risk-pill risk-" + calc.level.toLowerCase();
+          $("riskScore").textContent = calc.score + "%";
+          $("riskBar").style.width = calc.score + "%";
+          $("riskBar").style.background =
+            calc.level === "LOW"
+              ? "var(--green)"
+              : calc.level === "MEDIUM"
+                ? "var(--amber)"
+                : "var(--red)";
+          $("riskReason").textContent = calc.reasons.join(" · ");
+          $("freshText").textContent =
+            "Updated " +
+            new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+          if (calc.level === "HIGH" || calc.level === "CRITICAL") {
+            showAlert(
+              calc.level === "CRITICAL"
+                ? "Critical local risk signal"
+                : "Elevated local risk signal",
+              calc.reasons.join(" · "),
+              "danger",
+            );
+            if (
+              "Notification" in window &&
+              Notification.permission === "granted"
+            )
+              new Notification("SlopeWatch · " + calc.level, {
+                body: calc.reasons.join(" · "),
+              });
+          }
 
-  async function loadReports(){
-    if(state.lat==null) return;
-    const r=await fetch("/api/reports?lat="+state.lat+"&lon="+state.lon+"&radiusKm=5");
-    if(!r.ok) throw new Error("Report service unavailable");
-    state.reports=await r.json();
-    $("reportCount").textContent=state.reports.length;
-    renderReportMarkers();
-    renderReportList();
-  }
+          const times = w.hourly.time || [],
+            rain = w.hourly.precipitation || [],
+            temp = w.hourly.temperature_2m || [],
+            codes = w.hourly.weather_code || [];
+          const now = Date.now();
+          const future = [];
+          for (let i = 0; i < times.length; i++) {
+            const d = new Date(times[i]);
+            if (d >= new Date(now - 30 * 60000)) {
+              future.push({
+                d,
+                r: Number(rain[i] || 0),
+                t: Number(temp[i] || 0),
+                code: codes[i],
+              });
+            }
+            if (future.length >= 6) break;
+          }
+          $("forecast").innerHTML = future
+            .map(
+              (x) =>
+                '<div class="f"><div class="time">' +
+                x.d.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }) +
+                "</div><strong>" +
+                weatherEmoji(x.code) +
+                " " +
+                Math.round(x.t) +
+                "°</strong><span>💧 " +
+                x.r.toFixed(1) +
+                " mm</span></div>",
+            )
+            .join("");
+        }
 
-  function renderReportList(){
-    const el=$("reportList");
-    if(!state.reports.length){el.innerHTML='<div class="sub">No reports within 5 km yet. If you see a slope warning sign, report it.</div>';return;}
-    el.innerHTML=state.reports.slice(0,12).map(r=>{
-      const mins=Math.max(1,Math.round((Date.now()-new Date(r.createdAt))/60000));
-      return '<div class="report"><div><div class="rtype">'+labelType(r.type)+'</div><p>'+escapeHtml(r.description)+'</p><div class="time">'+mins+' min ago · '+r.distanceKm.toFixed(1)+' km away · unverified</div></div><div class="time">'+r.id+'</div></div>';
-    }).join("");
-  }
+        function weatherEmoji(code) {
+          if (code === 0) return "☀️";
+          if ([1, 2, 3].includes(code)) return "⛅";
+          if ([45, 48].includes(code)) return "🌫️";
+          if ([51, 53, 55, 56, 57].includes(code)) return "🌦️";
+          if ([61, 63, 65, 66, 67].includes(code)) return "🌧️";
+          if ([71, 73, 75, 77].includes(code)) return "🌨️";
+          if ([80, 81, 82].includes(code)) return "🌧️";
+          if ([95, 96, 99].includes(code)) return "⛈️";
+          return "🌦️";
+        }
 
-  function calcRisk(){
-    const w=state.weather, h=w.current||{};
-    const hourly=w.hourly||{};
-    const times=hourly.time||[], rain=hourly.precipitation||[];
-    const now=new Date();
-    const past24=times.map((t,i)=>({t:new Date(t),v:Number(rain[i]||0)}))
-      .filter(x=>x.t<=now && now-x.t<=26*3600*1000)
-      .reduce((s,x)=>s+x.v,0);
+        async function loadNearbyPlaces() {
+          const q =
+            '[out:json][timeout:12];(nwr["amenity"~"hospital|police|fire_station"](around:6000,' +
+            state.lat +
+            "," +
+            state.lon +
+            "););out center tags;";
+          const r = await fetch("https://overpass-api.de/api/interpreter", {
+            method: "POST",
+            body: q,
+            headers: { "Content-Type": "text/plain" },
+          });
+          if (!r.ok) throw new Error("Nearby places service unavailable");
+          const j = await r.json();
+          const places = (j.elements || [])
+            .map((e) => {
+              const lat = e.lat ?? e.center?.lat,
+                lon = e.lon ?? e.center?.lon,
+                tags = e.tags || {};
+              return {
+                lat,
+                lon,
+                name: tags.name || labelType(tags.amenity || "service"),
+                type: tags.amenity || "service",
+                dist: haversine(state.lat, state.lon, lat, lon),
+              };
+            })
+            .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lon))
+            .sort((a, b) => a.dist - b.dist)
+            .slice(0, 8);
+          state.placeLayer.clearLayers();
+          $("placeList").innerHTML = places.length
+            ? places
+                .map((p) => {
+                  const icon =
+                    p.type === "hospital"
+                      ? "🏥"
+                      : p.type === "police"
+                        ? "👮"
+                        : "🚒";
+                  const dir =
+                    "https://www.google.com/maps/dir/?api=1&destination=" +
+                    p.lat +
+                    "," +
+                    p.lon +
+                    "&travelmode=driving";
+                  L.marker([p.lat, p.lon])
+                    .addTo(state.placeLayer)
+                    .bindPopup(
+                      "<b>" +
+                        escapeHtml(p.name) +
+                        "</b><br>" +
+                        icon +
+                        " " +
+                        p.type,
+                    );
+                  return (
+                    '<div class="place"><div><div class="place-name">' +
+                    icon +
+                    " " +
+                    escapeHtml(p.name) +
+                    '</div><div class="place-meta">' +
+                    (p.dist < 1 ? p.dist.toFixed(2) : p.dist.toFixed(1)) +
+                    " km away · " +
+                    labelType(p.type) +
+                    '</div></div><a href="' +
+                    dir +
+                    '" target="_blank" rel="noreferrer">Navigate →</a></div>'
+                  );
+                })
+                .join("")
+            : '<div class="sub">No nearby mapped emergency facilities were returned.</div>';
+        }
 
-    const next24=times.map((t,i)=>({t:new Date(t),v:Number(rain[i]||0)}))
-      .filter(x=>x.t>=now && x.t-now<=24*3600*1000)
-      .reduce((s,x)=>s+x.v,0);
+        async function refresh() {
+          try {
+            setStatus("Getting GPS…");
+            const pos = await getLocation();
+            state.lat = pos.lat;
+            state.lon = pos.lon;
+            $("reportGps").value =
+              pos.lat.toFixed(5) + ", " + pos.lon.toFixed(5);
+            updateMap();
+            setStatus("Loading live weather…");
+            const [weather, elev, location] = await Promise.all([
+              getWeather(state.lat, state.lon),
+              getElevationGrid(state.lat, state.lon),
+              reverseGeocode(state.lat, state.lon),
+            ]);
+            state.weather = weather;
+            state.elevation = elev.center;
+            state.relief = elev.relief;
+            $("locationText").textContent = location;
+            await loadReports();
+            renderWeather();
+            setStatus("Live data updated");
+            loadNearbyPlaces().catch(() =>
+              toast("Nearby services could not be loaded right now."),
+            );
+            toast("Live risk signal updated.");
+          } catch (e) {
+            setStatus("Live data unavailable", false);
+            toast(e.message || "Something went wrong.");
+            console.error(e);
+          }
+        }
 
-    const r1=Number(h.precipitation||0);
-    const relief=Number(state.relief||0);
-    const reports=state.reports||[];
-    const reportWeights={landslide:28,ground_crack:16,water_seepage:12,soil_movement:16,rockfall:10,road_damage:8};
-    let reportScore=0;
-    const recentCut=Date.now()-48*3600*1000;
-    reports.forEach(r=>{
-      if(new Date(r.createdAt)>=recentCut) reportScore+=reportWeights[r.type]||5;
-    });
-    reportScore=Math.min(25,reportScore);
+        $("locateBtn").addEventListener("click", async () => {
+          if (
+            "Notification" in window &&
+            Notification.permission === "default"
+          ) {
+            try {
+              await Notification.requestPermission();
+            } catch {}
+          }
+          refresh();
+        });
+        $("refreshBtn").addEventListener("click", refresh);
+        $("recenterBtn").addEventListener(
+          "click",
+          () =>
+            state.lat != null && state.map.setView([state.lat, state.lon], 14),
+        );
 
-    const rain1Score=Math.min(22,r1/2.5*22);
-    const rain24Score=Math.min(28,past24/180*28);
-    const forecastScore=Math.min(15,next24/160*15);
-    const terrainScore=Math.min(10,relief/180*10);
-    const score=Math.round(Math.min(100,rain1Score+rain24Score+forecastScore+terrainScore+reportScore));
+        function openReport() {
+          $("reportModal").classList.add("open");
+          if (state.lat != null)
+            $("reportGps").value =
+              state.lat.toFixed(5) + ", " + state.lon.toFixed(5);
+          else $("reportGps").value = "Click Use my location first";
+        }
+        function closeReport() {
+          $("reportModal").classList.remove("open");
+        }
+        $("reportBtn").addEventListener("click", openReport);
+        $("closeModal").addEventListener("click", closeReport);
+        $("cancelReport").addEventListener("click", closeReport);
 
-    let level=score>=75?"HIGH":score>=50?"MEDIUM":"LOW";
-    if(score>=90) level="CRITICAL";
+        $("reportForm").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          if (state.lat == null) {
+            toast("Please enable your location first.");
+            return;
+          }
+          const file = $("reportPhoto").files[0];
+          let photo = null;
+          if (file) {
+            if (file.size > 2_500_000) {
+              toast("Please choose a photo under 2.5 MB.");
+              return;
+            }
+            photo = await new Promise((resolve, reject) => {
+              const fr = new FileReader();
+              fr.onload = () => resolve(fr.result);
+              fr.onerror = reject;
+              fr.readAsDataURL(file);
+            });
+          }
+          const body = {
+            latitude: state.lat,
+            longitude: state.lon,
+            type: $("reportType").value,
+            description: $("reportDescription").value,
+            photo,
+          };
+          try {
+            const r = await fetch("/api/reports", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            });
+            const j = await r.json();
+            if (!r.ok) throw new Error(j.error || "Report failed");
+            closeReport();
+            $("reportForm").reset();
+            toast(
+              "Hazard report submitted and mapped to this area.",
+              "success",
+            );
+            showAlert(
+              "Community report received",
+              "The observation is now visible as an unverified local signal.",
+              "warning",
+            );
+            await loadReports();
+            renderWeather();
+          } catch (err) {
+            toast(err.message || "Could not submit report.");
+          }
+        });
 
-    let reasons=[];
-    if(r1>=15) reasons.push("intense current rain");
-    else if(r1>=5) reasons.push("elevated current rain");
-    if(past24>=120) reasons.push("heavy 24-hour accumulation");
-    else if(past24>=60) reasons.push("significant 24-hour accumulation");
-    if(next24>=100) reasons.push("heavy rain forecast");
-    if(relief>=120) reasons.push("high local relief");
-    if(reports.length) reasons.push(reports.length+" recent community report"+(reports.length>1?"s":""));
-    if(!reasons.length) reasons.push("no strong short-term trigger detected");
+        const originalRenderWeather = renderWeather;
+        renderWeather = function () {
+          originalRenderWeather();
+          const fresh = $("freshText");
+          if (fresh)
+            fresh.textContent =
+              "Updated " +
+              new Date().toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+          const rain = Number(state.weather?.current?.precipitation || 0);
+          document.querySelector(".rain-field").style.opacity =
+            rain >= 8 ? ".40" : rain >= 2 ? ".30" : ".18";
+        };
 
-    return {score,level,past24,next24,reasons};
-  }
-
-  function renderWeather(){
-    const w=state.weather, c=w.current||{}, calc=calcRisk();
-    $("rain1").textContent=Number(c.precipitation||0).toFixed(1)+" mm";
-    $("rain24").textContent=calc.past24.toFixed(1)+" mm";
-    $("relief").textContent=Math.round(state.relief||0)+" m";
-    $("elevation").textContent=Math.round(state.elevation||0)+" m";
-    $("humidity").textContent=Math.round(c.relative_humidity_2m||0)+"%";
-    $("wind").textContent=Math.round(c.wind_speed_10m||0)+" km/h";
-
-    const pill=$("riskPill"); pill.textContent=calc.level+" RISK"; pill.className="risk-pill risk-"+calc.level.toLowerCase();
-    $("riskScore").textContent=calc.score+"%";
-    $("riskBar").style.width=calc.score+"%";
-    $("riskBar").style.background=calc.level==="LOW"?"var(--green)":calc.level==="MEDIUM"?"var(--amber)":"var(--red)";
-    $("riskReason").textContent=calc.reasons.join(" · ");
-    $("freshText").textContent = "Updated " + new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
-    if(calc.level==="HIGH" || calc.level==="CRITICAL") {
-      showAlert(calc.level==="CRITICAL"?"Critical local risk signal":"Elevated local risk signal", calc.reasons.join(" · "), "danger");
-      if("Notification" in window && Notification.permission==="granted") new Notification("SlopeWatch · "+calc.level, {body:calc.reasons.join(" · ")});
-    }
-
-    const times=w.hourly.time||[], rain=w.hourly.precipitation||[], temp=w.hourly.temperature_2m||[], codes=w.hourly.weather_code||[];
-    const now=Date.now();
-    const future=[];
-    for(let i=0;i<times.length;i++){
-      const d=new Date(times[i]);
-      if(d>=new Date(now-30*60000)){future.push({d,r:Number(rain[i]||0),t:Number(temp[i]||0),code:codes[i]});}
-      if(future.length>=6) break;
-    }
-    $("forecast").innerHTML=future.map(x=>'<div class="f"><div class="time">'+x.d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})+'</div><strong>'+weatherEmoji(x.code)+' '+Math.round(x.t)+'°</strong><span>💧 '+x.r.toFixed(1)+' mm</span></div>').join("");
-  }
-
-  function weatherEmoji(code){
-    if(code===0)return"☀️"; if([1,2,3].includes(code))return"⛅"; if([45,48].includes(code))return"🌫️";
-    if([51,53,55,56,57].includes(code))return"🌦️"; if([61,63,65,66,67].includes(code))return"🌧️";
-    if([71,73,75,77].includes(code))return"🌨️"; if([80,81,82].includes(code))return"🌧️";
-    if([95,96,99].includes(code))return"⛈️"; return"🌦️";
-  }
-
-  async function loadNearbyPlaces(){
-    const q='[out:json][timeout:12];(nwr["amenity"~"hospital|police|fire_station"](around:6000,'+state.lat+','+state.lon+'););out center tags;';
-    const r=await fetch("https://overpass-api.de/api/interpreter",{method:"POST",body:q,headers:{"Content-Type":"text/plain"}});
-    if(!r.ok) throw new Error("Nearby places service unavailable");
-    const j=await r.json();
-    const places=(j.elements||[]).map(e=>{
-      const lat=e.lat??e.center?.lat, lon=e.lon??e.center?.lon, tags=e.tags||{};
-      return {lat,lon,name:tags.name||labelType(tags.amenity||"service"),type:tags.amenity||"service",dist:haversine(state.lat,state.lon,lat,lon)};
-    }).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon)).sort((a,b)=>a.dist-b.dist).slice(0,8);
-    state.placeLayer.clearLayers();
-    $("placeList").innerHTML=places.length?places.map(p=>{
-      const icon=p.type==="hospital"?"🏥":p.type==="police"?"👮":"🚒";
-      const dir="https://www.google.com/maps/dir/?api=1&destination="+p.lat+","+p.lon+"&travelmode=driving";
-      L.marker([p.lat,p.lon]).addTo(state.placeLayer).bindPopup("<b>"+escapeHtml(p.name)+"</b><br>"+icon+" "+p.type);
-      return '<div class="place"><div><div class="place-name">'+icon+" "+escapeHtml(p.name)+'</div><div class="place-meta">'+(p.dist<1?p.dist.toFixed(2):p.dist.toFixed(1))+' km away · '+labelType(p.type)+'</div></div><a href="'+dir+'" target="_blank" rel="noreferrer">Navigate →</a></div>';
-    }).join(""):'<div class="sub">No nearby mapped emergency facilities were returned.</div>';
-  }
-
-  async function refresh(){
-    try{
-      setStatus("Getting GPS…");
-      const pos=await getLocation();
-      state.lat=pos.lat; state.lon=pos.lon;
-      $("reportGps").value=pos.lat.toFixed(5)+", "+pos.lon.toFixed(5);
-      updateMap();
-      setStatus("Loading live weather…");
-      const [weather,elev,location]=await Promise.all([
-        getWeather(state.lat,state.lon),
-        getElevationGrid(state.lat,state.lon),
-        reverseGeocode(state.lat,state.lon)
-      ]);
-      state.weather=weather; state.elevation=elev.center; state.relief=elev.relief;
-      $("locationText").textContent=location;
-      await loadReports();
-      renderWeather();
-      setStatus("Live data updated");
-      loadNearbyPlaces().catch(()=>toast("Nearby services could not be loaded right now."));
-      toast("Live risk signal updated.");
-    }catch(e){
-      setStatus("Live data unavailable",false);
-      toast(e.message||"Something went wrong.");
-      console.error(e);
-    }
-  }
-
-  $("locateBtn").addEventListener("click",async()=>{
-    if("Notification" in window && Notification.permission==="default") { try { await Notification.requestPermission(); } catch {} }
-    refresh();
-  });
-  $("refreshBtn").addEventListener("click",refresh);
-  $("recenterBtn").addEventListener("click",()=>state.lat!=null&&state.map.setView([state.lat,state.lon],14));
-
-  function openReport(){
-    $("reportModal").classList.add("open");
-    if(state.lat!=null)$("reportGps").value=state.lat.toFixed(5)+", "+state.lon.toFixed(5);
-    else $("reportGps").value="Click Use my location first";
-  }
-  function closeReport(){$("reportModal").classList.remove("open")}
-  $("reportBtn").addEventListener("click",openReport);
-  $("closeModal").addEventListener("click",closeReport);
-  $("cancelReport").addEventListener("click",closeReport);
-
-  $("reportForm").addEventListener("submit",async e=>{
-    e.preventDefault();
-    if(state.lat==null){toast("Please enable your location first.");return;}
-    const file=$("reportPhoto").files[0];
-    let photo=null;
-    if(file){
-      if(file.size>2_500_000){toast("Please choose a photo under 2.5 MB.");return;}
-      photo=await new Promise((resolve,reject)=>{
-        const fr=new FileReader(); fr.onload=()=>resolve(fr.result); fr.onerror=reject; fr.readAsDataURL(file);
-      });
-    }
-    const body={latitude:state.lat,longitude:state.lon,type:$("reportType").value,description:$("reportDescription").value,photo};
-    try{
-      const r=await fetch("/api/reports",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-      const j=await r.json();
-      if(!r.ok) throw new Error(j.error||"Report failed");
-      closeReport(); $("reportForm").reset(); toast("Hazard report submitted and mapped to this area.","success"); showAlert("Community report received","The observation is now visible as an unverified local signal.","warning");
-      await loadReports(); renderWeather();
-    }catch(err){toast(err.message||"Could not submit report.");}
-  });
-
-
-  const originalRenderWeather = renderWeather;
-  renderWeather = function(){
-    originalRenderWeather();
-    const fresh = $("freshText");
-    if (fresh) fresh.textContent = "Updated " + new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
-    const rain = Number(state.weather?.current?.precipitation || 0);
-    document.querySelector(".rain-field").style.opacity = rain >= 8 ? ".40" : rain >= 2 ? ".30" : ".18";
-  };
-
-  initMap();
-  // The page deliberately waits for explicit GPS permission instead of silently requesting location.
-})();
-</script>
-</body>
+        initMap();
+        // The page deliberately waits for explicit GPS permission instead of silently requesting location.
+      })();
+    </script>
+  </body>
 </html>
